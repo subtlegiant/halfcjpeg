@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 
     // create buffer and store grayscale data
     unsigned char* dataBuffer = (char* ) malloc((xVal*yVal) + 1);  
-    fgets(dataBuffer, (xVal*yVal), dataFile);
+    fread(dataBuffer, (xVal*yVal), dataFile);
     fclose(dataFile);
 
 
