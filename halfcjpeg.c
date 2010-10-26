@@ -63,15 +63,19 @@ int main(int argc, char** argv)
     char* quantFileName = argv[2];
     int qScale = atoi(argv[3]);
     char* outputFileName = argv[4];
-    
-    
+    printf("%s\n", image);
+    printf("%s\n", quantFileName);    
+    printf("%d\n", qScale);
+    printf("%s\n", outputFileName);
+
+
     // PGM header file information
     char* head = "";
     char* xValTemp = "";
     int xVal = 0;
     char* yValTemp = "";
     int yVal = 0;
-    char* colorVal = "";
+    char* colorVal;
 
 
     // read input from PGM file image
@@ -80,32 +84,36 @@ int main(int argc, char** argv)
     // read the first line of the PGM file, should be P5
     char tempBuff[256];
     fgets(tempBuff, 10, dataFile);
+    printf("tempBuff: %s\n", tempBuff);
 
     // read the second line of input, x and y pixel sizes
     fgets(tempBuff,256,dataFile);
+    printf("tempBuff line 2: %s\n", tempBuff);
+   
 
     // get each pixel number, delimited by a space and
     // copy x value from buffer 
-
-    //strcpy(xValTemp, temp);
-    strcpy(xValTemp,(strtok(tempBuff, " ")));
+    xValTemp = strtok(tempBuff, " ");
     xVal = atoi(xValTemp);
+    printf("xVal: %d\n", xVal);
 
     // get and copy y value from buffer
-
-    strcpy(yValTemp, strtok(NULL," "));
+    yValTemp = strtok(NULL," ");
     yVal = atoi(yValTemp);
+    printf("yVal: %d\n", yVal);
 
     // get and copy color value from PGM file
     fgets(tempBuff, 256, dataFile);
+    colorVal = (char *) malloc(sizeof(tempBuff)/sizeof(tempBuff[0]));
     strcpy(colorVal, tempBuff);
+    printf("colorval: %s\n", colorVal);
 
     // create buffer and store grayscale data
-    unsigned char* dataBuffer = (char* ) malloc((xVal*yVal) + 1);  
-    fread(dataBuffer, (xVal*yVal), dataFile);
+    u8 * dataBuffer = (u8 *) malloc(xVal*yVal);  
+    fread(dataBuffer, sizeof(u8), (xVal*yVal), dataFile);
     fclose(dataFile);
+    printf("%x\n",  dataBuffer);
 
 
- 
     return 1;
 }
