@@ -15,7 +15,6 @@ int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
     for (i=0; i<16; ++i) {
         for (j=0; j<16; ++j) {
             mblock[i][j] = *(data_buf);
-           // printf("mb[%d][%d] = %x\n", i, j, mblock[i][j]);
             ++data_buf;
         }
      }
@@ -23,10 +22,9 @@ int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
      return 1;
 }
 
-int get_block(u8 ** mblock, u8 * block, int offsetx, int offsety)
+int get_block(u8 ** mblock, u8 ** block, int offsetx, int offsety)
 {
     int i, j;
-    mblock = mblock + index;
 
     // pull an 8bit x 8bit block of data
     // from mblock, starting at the given
@@ -34,17 +32,17 @@ int get_block(u8 ** mblock, u8 * block, int offsetx, int offsety)
     for (i=0; i<8; ++i) {
         ++offsetx;
         for (j=0; j<8; ++j) {
-            block[0][0] = mblock[offsetx][offsety]
+            block[i][j] = mblock[offsetx][offsety];
             ++offsety;   
-            }
         }
-    }
+     }
     
     return 1;
 }        
 
 int transform_block(u8 ** block, double ** dct_matrix)
 {
+  return 1;
      
 }
 
@@ -108,7 +106,7 @@ int main(int argc, char** argv)
     printf("colorval: %s\n", colorVal);
 
     // create buffer and store grayscale data
-    u8 * dataBuffer = (u8 *) malloc(xVal*yVal);  
+    u8 * dataBuffer = (u8 *) malloc(xVal*yVal + 1);  
     fread(dataBuffer, sizeof(u8), (xVal*yVal), dataFile);
     fclose(dataFile);
     printf("%x\n",  dataBuffer);
@@ -126,34 +124,41 @@ int main(int argc, char** argv)
         q_matrix[i] = (int *) malloc(8 * sizeof(int));
     }   
  
-    while (temp != EOF) {
-        fscanf(q_file, "%d", &temp):
+    while (fscanf(q_file, "%d", &temp) != EOF) {
         q_matrix[x][y] = temp;
-
+        ++x;
         if (x > 7) {
            x = 0;
            ++y;
         }
-
-
+    }
   
-     
+    printf("q_matrix[0][0] %d\n", q_matrix[0][0]);
 
     int offsetx = 0;
     int offsety = 0;
+    int offset = 0;
     u8 ** mb;
     u8 ** block;
     int **  dct_matrix;
-
+    int j, k;
+    
     // allocate memory for the dct matrix
-    dct_matrix = (double **) malloc(
+    dct_matrix = (int **) malloc(xVal * sizeof(int *));
+    for (i=0; i<xVal; ++i) {
+        dct_matrix[i] = (int *) malloc(yVal * sizeof(int));
+    }
 
     // allocate memory for the next macro block
     mb = (u8 **) malloc(16 * sizeof(u8*));
     for (i=0; i<16; ++i) {
         mb[i] = (u8 *) malloc(16 * sizeof(u8));
     }
-    
+
+    while (*(dataFile) != '\0') {
+        ++dataFile;
+    }
+   
     get_macro_block(dataBuffer, mb, offset);
     printf("%x", mb[0][0]);
    
@@ -163,8 +168,6 @@ int main(int argc, char** argv)
         block[i] = (u8 *) malloc(8 * sizeof(u8));
     }
 
-    int offsetx = 0;
-    int offsety = 0;
     get_block(mb, block, offsetx, offsety);
     return 1;
 }
