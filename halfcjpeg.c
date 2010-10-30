@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-
+#define _USE_MATH_DEFINES
 #define u8 unsigned char
 
 int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
@@ -40,8 +41,39 @@ int get_block(u8 ** mblock, u8 ** block, int offsetx, int offsety)
     return 1;
 }        
 
-int transform_block(u8 ** block, double ** dct_matrix)
+int transform_block(u8 ** block, int ** dct_matrix, int x_index, int y_index)
 {
+
+    int u, v, x, y;
+    float t_val, tval_x, tval_y = 0.0;
+    float cu, cv;
+
+    for (u=0; u<8; ++u) {
+        if (u == 0) {
+            cu = (1/sqrt(0.5))
+        }
+        else {
+            cu = 1;
+        }
+        for (v=0; v<8; ++v) {
+            if (v==0) {
+                cv = (1/sqrt(0.5))
+            }
+            else {
+                cv = 1;
+            }
+            for (x=0; x<8; ++x) {
+                for (y=0; y<8; ++y) {
+                   (double) tval_y += (double) block[x][y] *
+                                       cos(((2*x+1)*u*M_PI)/16) *
+                                       cos(((2*y+1)*v*M_PI)/16);
+                } 
+                (double) tval_x += tval_y;
+                tval_y = 0;
+            }
+            dct_matrix[u+x_index][v+y_index] = cu*cv*tval_x;
+     }
+
   return 1;
      
 }
@@ -60,10 +92,10 @@ int main(int argc, char** argv)
     char* quantFileName = argv[2];
     int qScale = atoi(argv[3]);
     char* outputFileName = argv[4];
-    printf("%s\n", image);
-    printf("%s\n", quantFileName);    
-    printf("%d\n", qScale);
-    printf("%s\n", outputFileName);
+  //  printf("%s\n", image);
+  //  printf("%s\n", quantFileName);    
+  //  printf("%d\n", qScale);
+  //  printf("%s\n", outputFileName);
 
 
     // PGM header file information
@@ -81,35 +113,35 @@ int main(int argc, char** argv)
     // read the first line of the PGM file, should be P5
     char tempBuff[256];
     fgets(tempBuff, 10, dataFile);
-    printf("tempBuff: %s\n", tempBuff);
+    //printf("tempBuff: %s\n", tempBuff);
 
     // read the second line of input, x and y pixel sizes
     fgets(tempBuff,256,dataFile);
-    printf("tempBuff line 2: %s\n", tempBuff);
+    //printf("tempBuff line 2: %s\n", tempBuff);
    
 
     // get each pixel number, delimited by a space and
     // copy x value from buffer 
     xValTemp = strtok(tempBuff, " ");
     xVal = atoi(xValTemp);
-    printf("xVal: %d\n", xVal);
+    //printf("xVal: %d\n", xVal);
 
     // get and copy y value from buffer
     yValTemp = strtok(NULL," ");
     yVal = atoi(yValTemp);
-    printf("yVal: %d\n", yVal);
+    //printf("yVal: %d\n", yVal);
 
     // get and copy color value from PGM file
     fgets(tempBuff, 256, dataFile);
     colorVal = (char *) malloc(sizeof(tempBuff)/sizeof(tempBuff[0]));
     strcpy(colorVal, tempBuff);
-    printf("colorval: %s\n", colorVal);
+    //printf("colorval: %s\n", colorVal);
 
     // create buffer and store grayscale data
     u8 * dataBuffer = (u8 *) malloc(xVal*yVal + 1);  
     fread(dataBuffer, sizeof(u8), (xVal*yVal), dataFile);
     fclose(dataFile);
-    printf("%x\n",  dataBuffer);
+    //printf("%x\n",  dataBuffer);
 
     // read in quantfile matrix
     int ** q_matrix;
