@@ -8,14 +8,14 @@
 int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
 {
     int i,j;
-
     data_buf = data_buf + offset;
     
     // pull a 16bit x 16bit macro block of data 
     // from data_buf, starting at offset
     for (i=0; i<16; ++i) {
-        for (j=0; j<2; ++j) {
+        for (j=0; j<16; ++j) {
             mblock[i][j] = *(data_buf);
+           // printf("mb[%d][%d] = %x\n", i, j, mblock[i][j]);
             ++data_buf;
         }
      }
@@ -23,31 +23,30 @@ int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
      return 1;
 }
 
-int get_block(u8 ** mblock, u8 * block, int index)
+int get_block(u8 ** mblock, u8 * block, int offsetx, int offsety)
 {
-    int i;
-    int offset = 0;
-    
+    int i, j;
     mblock = mblock + index;
 
     // pull an 8bit x 8bit block of data
     // from mblock, starting at the given
     // index
     for (i=0; i<8; ++i) {
-        if(offset > 1) {
-            offset = 0;
-            ++index;
+        ++offsetx;
+        for (j=0; j<8; ++j) {
+            block[0][0] = mblock[offsetx][offsety]
+            ++offsety;   
+            }
         }
-       
-        block[i] = mblock[index][offset];
-        ++offset;
     }
     
     return 1;
 }        
 
-
-
+int transform_block(u8 ** block, double ** dct_matrix)
+{
+     
+}
 
     
 int main(int argc, char** argv)
@@ -76,8 +75,8 @@ int main(int argc, char** argv)
     char* yValTemp = "";
     int yVal = 0;
     char* colorVal;
-
-
+    int i;
+ 
     // read input from PGM file image
     FILE* dataFile = fopen(image,"r");
     FILE* outputFileHandle = fopen(outputFileName,"w");
@@ -114,6 +113,58 @@ int main(int argc, char** argv)
     fclose(dataFile);
     printf("%x\n",  dataBuffer);
 
+    // read in quantfile matrix
+    int ** q_matrix;
+    int temp;
+    int x = 0;
+    int y = 0;
+    FILE * q_file = fopen(quantFileName, "r");
+    
+    // allocate quantization matrix
+    q_matrix = (int **) malloc(8 * sizeof(int *));
+    for (i=0; i<8; ++i) {
+        q_matrix[i] = (int *) malloc(8 * sizeof(int));
+    }   
+ 
+    while (temp != EOF) {
+        fscanf(q_file, "%d", &temp):
+        q_matrix[x][y] = temp;
 
+        if (x > 7) {
+           x = 0;
+           ++y;
+        }
+
+
+  
+     
+
+    int offsetx = 0;
+    int offsety = 0;
+    u8 ** mb;
+    u8 ** block;
+    int **  dct_matrix;
+
+    // allocate memory for the dct matrix
+    dct_matrix = (double **) malloc(
+
+    // allocate memory for the next macro block
+    mb = (u8 **) malloc(16 * sizeof(u8*));
+    for (i=0; i<16; ++i) {
+        mb[i] = (u8 *) malloc(16 * sizeof(u8));
+    }
+    
+    get_macro_block(dataBuffer, mb, offset);
+    printf("%x", mb[0][0]);
+   
+    // allocate memory for the next block 
+    block = (u8 **) malloc(8 * sizeof(u8*));
+    for (i=0; i<8; ++i) {
+        block[i] = (u8 *) malloc(8 * sizeof(u8));
+    }
+
+    int offsetx = 0;
+    int offsety = 0;
+    get_block(mb, block, offsetx, offsety);
     return 1;
 }
