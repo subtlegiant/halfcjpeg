@@ -155,19 +155,24 @@ int main(int argc, char** argv)
         mb[i] = (u8 *) malloc(16 * sizeof(u8));
     }
 
-    while (*(dataFile) != '\0') {
-        ++dataFile;
-    }
-   
-    get_macro_block(dataBuffer, mb, offset);
-    printf("%x", mb[0][0]);
-   
-    // allocate memory for the next block 
+    // allocate memory for block 
     block = (u8 **) malloc(8 * sizeof(u8*));
     for (i=0; i<8; ++i) {
         block[i] = (u8 *) malloc(8 * sizeof(u8));
     }
 
-    get_block(mb, block, offsetx, offsety);
+    while (*(dataBuffer) != '\0') {
+       
+      get_macro_block(dataBuffer, mb, offsetx);
+      for (j=0; j<2; j++) {
+          for (k=0; k<2; k++) {
+            get_block(mb, block, offsetx, offsety);
+            offsetx += 8;
+          }
+          offsetx = 0;
+          offsety += 8; 
+      }
+    }        
+   
     return 1;
 }
