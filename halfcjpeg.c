@@ -16,8 +16,10 @@ int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
     for (i=0; i<16; ++i) {
         for (j=0; j<16; ++j) {
             mblock[i][j] = *(data_buf);
+    //        printf("mblock[%d][%d]: %x\n", i, j, mblock[i][j]); 
             ++data_buf;
         }
+
      }
 
      return 1;
@@ -26,53 +28,63 @@ int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
 int get_block(u8 ** mblock, u8 ** block, int offsetx, int offsety)
 {
     int i, j;
-
-    // pull an 8bit x 8bit block of data
+    
+    // pull an 8byte x 8byte block of data
     // from mblock, starting at the given
     // index
     for (i=0; i<8; ++i) {
-        ++offsetx;
         for (j=0; j<8; ++j) {
-            block[i][j] = mblock[offsetx][offsety];
-            ++offsety;   
+            block[i][j] = mblock[offsetx+i][offsety+j];
+          //  printf("%d %d mblock %x\n", offsetx+i, offsety+j, mblock[offsetx+i][offsety+i]);
+          //  printf("block val: %f\n",(double) block[i][j]);
         }
      }
+     
     
     return 1;
 }        
 
-int transform_block(u8 ** block, int ** dct_matrix, int x_index, int y_index)
+int transform_block(u8 ** block, float ** dct_matrix, int x_index, int y_index)
 {
 
     int u, v, x, y;
-    float t_val, tval_x, tval_y = 0.0;
+    float tval_x, tval_y = 0.0;
     float cu, cv;
+  //  printf("%d %d", x_index, y_index);
 
     for (u=0; u<8; ++u) {
         if (u == 0) {
-            cu = (1/sqrt(0.5))
+            cu = sqrt(0.5);
         }
         else {
             cu = 1;
         }
         for (v=0; v<8; ++v) {
             if (v==0) {
-                cv = (1/sqrt(0.5))
+                cv = sqrt(0.5);
             }
             else {
                 cv = 1;
             }
+            tval_x = 0;
             for (x=0; x<8; ++x) {
                 for (y=0; y<8; ++y) {
-                   (double) tval_y += (double) block[x][y] *
-                                       cos(((2*x+1)*u*M_PI)/16) *
-                                       cos(((2*y+1)*v*M_PI)/16);
+//                    printf("block_val: %f\n ", tval_y);
+//                    printf("x %d y %d u %d v %d:", x, y, u, v);
+//                    printf("form1: %lf\n", cosf(((2*x+1)*u*M_PI)/16));
+                    tval_y = (double)tval_y + (((double) block[x][y]) * cos(((2*x+1)*u*M_PI)/16) * cos(((2*y+1)*v*M_PI)/16));
+                   
                 } 
-                (double) tval_x += tval_y;
+                printf("%f\n", tval_y);
+            //    printf("%f\n", tval_x);          
+                tval_x = (double)tval_x + (double)tval_y;
                 tval_y = 0;
             }
-            dct_matrix[u+x_index][v+y_index] = cu*cv*tval_x;
-     }
+            printf("cu %f, cv %f\n", cu, cv);
+            dct_matrix[u+x_index][v+y_index] = (float) ((cu/2)*(cv/2)*tval_x);
+            printf("dct_matrix[%d][%d]: %f\n", u+x_index, v+y_index, dct_matrix[u+x_index][v+y_index]);
+         }
+    }
 
   return 1;
      
@@ -172,14 +184,15 @@ int main(int argc, char** argv)
     int offset = 0;
     u8 ** mb;
     u8 ** block;
-    int **  dct_matrix;
+    float **  dct_matrix;
     int j, k;
     
     // allocate memory for the dct matrix
-    dct_matrix = (int **) malloc(xVal * sizeof(int *));
+    dct_matrix = (float **) malloc(xVal * sizeof(float *));
     for (i=0; i<xVal; ++i) {
-        dct_matrix[i] = (int *) malloc(yVal * sizeof(int));
+        dct_matrix[i] = (float *) malloc(yVal * sizeof(float));
     }
+    printf("xVal: %d, yVal: %d\n", xVal, yVal);
 
     // allocate memory for the next macro block
     mb = (u8 **) malloc(16 * sizeof(u8*));
@@ -192,18 +205,20 @@ int main(int argc, char** argv)
     for (i=0; i<8; ++i) {
         block[i] = (u8 *) malloc(8 * sizeof(u8));
     }
-
+    
     while (*(dataBuffer) != '\0') {
-       
       get_macro_block(dataBuffer, mb, offsetx);
+      printf("%x\n", mb[0][0]);
       for (j=0; j<2; j++) {
           for (k=0; k<2; k++) {
             get_block(mb, block, offsetx, offsety);
+            transform_block(block, dct_matrix, offsetx, offsety);
             offsetx += 8;
           }
           offsetx = 0;
           offsety += 8; 
       }
+      dataBuffer += 16*16;
     }        
    
     return 1;
