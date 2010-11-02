@@ -72,17 +72,17 @@ int transform_block(u8 ** block, float ** dct_matrix, int x_index, int y_index)
 //                    printf("block_val: %f\n ", tval_y);
 //                    printf("x %d y %d u %d v %d:", x, y, u, v);
 //                    printf("form1: %lf\n", cosf(((2*x+1)*u*M_PI)/16));
-                    tval_y = (double)tval_y + (((double) block[x][y]) * cos(((2*x+1)*u*M_PI)/16) * cos(((2*y+1)*v*M_PI)/16));
-                   
+                    tval_y = (double)tval_y + (((double) block[x][y]) *
+                             cos(((2*x+1)*u*M_PI)/16) * cos(((2*y+1)*v*M_PI)/16));
                 } 
-                printf("%f\n", tval_y);
+            //    printf("%f\n", tval_y);
             //    printf("%f\n", tval_x);          
                 tval_x = (double)tval_x + (double)tval_y;
                 tval_y = 0;
             }
-            printf("cu %f, cv %f\n", cu, cv);
-            dct_matrix[u+x_index][v+y_index] = (float) ((cu/2)*(cv/2)*tval_x);
-            printf("dct_matrix[%d][%d]: %f\n", u+x_index, v+y_index, dct_matrix[u+x_index][v+y_index]);
+         //   printf("cu %f, cv %f\n", cu, cv);
+            dct_matrix[u][v] = (float) ((cu/2)*(cv/2)*tval_x);
+        //    printf("dct_matrix[%d][%d]: %f\n", u+x_index, v+y_index, dct_matrix[u+x_index][v+y_index]);
          }
     }
 
@@ -90,6 +90,42 @@ int transform_block(u8 ** block, float ** dct_matrix, int x_index, int y_index)
      
 }
 
+int quantize_block_and_ouput(float ** dct_matrix, int ** q_matrix, int ** q_coeff, char * fname) 
+{
+    int x, y;
+    u8 temp;
+    FILE * outfile;
+
+    outfile = fopen(fname, "a");
+    
+    for (x=0; x<8; ++x) {
+        for (y=0; y<8; ++y) {
+            q_coeff[x][y] = round( dct_matrix[x][y] / q_matrix[x][y] );
+         //   printf("q_coeff[%d][%d] = %d\n", x, y, q_coeff[x][y]);
+          }
+    }
+    
+    // crop value and remap, then write to ouput file 
+    for (x=0; x<8; ++x) {
+        for (y=0; y<8; ++y) {
+            if (q_coeff[x][y] <= -127) {
+                q_coeff[x][y] = -127;
+            }
+            else if (q_coeff[x][y] >= 128) {
+               q_coeff[x][y] = 128;
+            }
+            q_coeff[x][y] += 127;
+       //     printf("q_coeff[%d][%d] = %d\n", x, y, q_coeff[x][y]);
+            temp = (u8)q_coeff[x][y];
+            fprintf(outfile, "%d ", q_coeff[x][y]);
+          //  fwrite(&temp, sizeof(u8), 1, outfile);
+            
+        }
+    }
+        
+    return 1;
+}
+    
     
 int main(int argc, char** argv)
 {
@@ -104,8 +140,8 @@ int main(int argc, char** argv)
     char* quantFileName = argv[2];
     int qScale = atoi(argv[3]);
     char* outputFileName = argv[4];
-  //  printf("%s\n", image);
-  //  printf("%s\n", quantFileName);    
+    printf("%s\n", image);
+    printf("%s\n", quantFileName);    
   //  printf("%d\n", qScale);
   //  printf("%s\n", outputFileName);
 
@@ -121,7 +157,8 @@ int main(int argc, char** argv)
  
     // read input from PGM file image
     FILE* dataFile = fopen(image,"r");
-    FILE* outputFileHandle = fopen(outputFileName,"w");
+    FILE* outfile = fopen(outputFileName,"w");
+
     // read the first line of the PGM file, should be P5
     char tempBuff[256];
     fgets(tempBuff, 10, dataFile);
@@ -155,6 +192,12 @@ int main(int argc, char** argv)
     fclose(dataFile);
     //printf("%x\n",  dataBuffer);
 
+    // write header to output file
+    fprintf(outfile, "MJPEG\n");
+    fprintf(outfile, "%d %d\n", xVal, yVal);
+    fprintf(outfile, "%d\n", qScale);
+    fclose(outfile);
+
     // read in quantfile matrix
     int ** q_matrix;
     int temp;
@@ -177,7 +220,7 @@ int main(int argc, char** argv)
         }
     }
   
-    printf("q_matrix[0][0] %d\n", q_matrix[0][0]);
+   // printf("q_matrix[0][0] %d\n", q_matrix[0][0]);
 
     int offsetx = 0;
     int offsety = 0;
@@ -185,14 +228,21 @@ int main(int argc, char** argv)
     u8 ** mb;
     u8 ** block;
     float **  dct_matrix;
+    int ** q_coeff;
     int j, k;
     
     // allocate memory for the dct matrix
-    dct_matrix = (float **) malloc(xVal * sizeof(float *));
-    for (i=0; i<xVal; ++i) {
-        dct_matrix[i] = (float *) malloc(yVal * sizeof(float));
+    dct_matrix = (float **) malloc(8 * sizeof(float *));
+    for (i=0; i<8; ++i) {
+        dct_matrix[i] = (float *) malloc(8 * sizeof(float));
     }
-    printf("xVal: %d, yVal: %d\n", xVal, yVal);
+  //  printf("xVal: %d, yVal: %d\n", xVal, yVal);
+  
+    // allocate memory for the quantization matrix
+    q_coeff = (int **) malloc(8 * sizeof(int *));
+    for (i=0; i<8; ++i) {
+        q_coeff[i] = (int *) malloc(8 * sizeof(int));
+    }
 
     // allocate memory for the next macro block
     mb = (u8 **) malloc(16 * sizeof(u8*));
@@ -208,11 +258,12 @@ int main(int argc, char** argv)
     
     while (*(dataBuffer) != '\0') {
       get_macro_block(dataBuffer, mb, offsetx);
-      printf("%x\n", mb[0][0]);
+   //   printf("%x\n", mb[0][0]);
       for (j=0; j<2; j++) {
           for (k=0; k<2; k++) {
             get_block(mb, block, offsetx, offsety);
             transform_block(block, dct_matrix, offsetx, offsety);
+            quantize_block_and_ouput(dct_matrix, q_matrix, q_coeff, outputFileName);
             offsetx += 8;
           }
           offsetx = 0;
