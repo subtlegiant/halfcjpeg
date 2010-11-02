@@ -6,10 +6,9 @@
 #define _USE_MATH_DEFINES
 #define u8 unsigned char
 
-int get_macro_block(u8 * data_buf, u8 ** mblock, int offset)
+int get_macro_block(u8 * data_buf, u8 ** mblock)
 {
     int i,j;
-    data_buf = data_buf + offset;
     
     // pull a 16bit x 16bit macro block of data 
     // from data_buf, starting at offset
@@ -44,7 +43,7 @@ int get_block(u8 ** mblock, u8 ** block, int offsetx, int offsety)
     return 1;
 }        
 
-int transform_block(u8 ** block, float ** dct_matrix, int x_index, int y_index)
+int transform_block(u8 ** block, float ** dct_matrix)
 {
 
     int u, v, x, y;
@@ -257,12 +256,12 @@ int main(int argc, char** argv)
     }
     
     while (*(dataBuffer) != '\0') {
-      get_macro_block(dataBuffer, mb, offsetx);
+      get_macro_block(dataBuffer, mb);
    //   printf("%x\n", mb[0][0]);
       for (j=0; j<2; j++) {
           for (k=0; k<2; k++) {
             get_block(mb, block, offsetx, offsety);
-            transform_block(block, dct_matrix, offsetx, offsety);
+            transform_block(block, dct_matrix);
             quantize_block_and_ouput(dct_matrix, q_matrix, q_coeff, outputFileName);
             offsetx += 8;
           }
@@ -270,6 +269,7 @@ int main(int argc, char** argv)
           offsety += 8; 
       }
       dataBuffer += 16*16;
+      offsety = 0;
     }        
    
     return 1;
